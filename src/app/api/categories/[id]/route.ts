@@ -5,10 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { categorySchema } from '@/validations/schemas';
 
-export async function GET(
-	request: Request,
-	{ params }: { params: { id: string } },
-) {
+export async function GET({ params }: { params: { id: string } }) {
 	try {
 		const category = await prisma.category.findUnique({
 			where: { id: params.id },

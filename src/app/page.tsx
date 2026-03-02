@@ -1,4 +1,5 @@
 // src/app/page.tsx
+import { Navbar } from '@/components/layout/navbar';
 import { Button } from '@/components/ui/button';
 import {
 	Card,
@@ -12,6 +13,7 @@ import { Input } from '@/components/ui/input';
 export default function Home() {
 	return (
 		<main className='min-h-screen p-8'>
+			<Navbar />
 			<h1 className='text-3xl font-bold mb-8'>E-commerce Diversos</h1>
 
 			<div className='grid gap-6 max-w-md'>
