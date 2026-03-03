@@ -17,6 +17,7 @@
 		"seed": "tsx prisma/seed/index.ts"
 	},
 	"dependencies": {
+		"@headlessui/react": "^2.2.9",
 		"@hookform/resolvers": "^5.2.2",
 		"@prisma/adapter-pg": "^7.4.2",
 		"@prisma/client": "5.14",
@@ -26,16 +27,20 @@
 		"@radix-ui/react-select": "^2.2.6",
 		"@radix-ui/react-slot": "^1.2.4",
 		"@radix-ui/react-tabs": "^1.1.13",
+		"@types/formidable": "^3.4.7",
 		"axios": "^1.13.6",
 		"bcryptjs": "^3.0.3",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
+		"formidable": "^3.5.4",
+		"framer-motion": "^12.34.5",
 		"jsonwebtoken": "^9.0.3",
 		"lucide-react": "^0.575.0",
 		"next": "16.1.6",
 		"react": "19.2.3",
 		"react-dom": "19.2.3",
 		"react-hook-form": "^7.71.2",
+		"recharts": "^3.7.0",
 		"tailwind-merge": "^3.5.0",
 		"tailwindcss-animate": "^1.0.7",
 		"zod": "^4.3.6"

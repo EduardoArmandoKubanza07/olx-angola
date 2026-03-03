@@ -17,9 +17,11 @@ export const productSchema = z.object({
 	price: z.number().positive('Preço deve ser positivo'),
 	stock: z.number().int().min(0, 'Estoque não pode ser negativo'),
 	categoryId: z.string().min(1, 'Categoria é obrigatória'),
-	images: z.array(z.string().url('URL inválida')).optional(),
+	images: z
+		.array(z.string().min(1, 'Caminho da imagem é obrigatório'))
+		.optional()
+		.default([]),
 });
-
 // Validação de categoria
 export const categorySchema = z.object({
 	name: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres'),

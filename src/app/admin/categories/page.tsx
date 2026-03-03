@@ -3,10 +3,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert } from '@/components/ui/alert';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { useToast } from '@/components/ui/toast';
+import { CategoryModal } from '@/components/admin/CategoryModal';
+import { DeleteConfirmModal } from '@/components/admin/DeleteConfirmModal';
+import { Pencil, Trash2, Plus } from 'lucide-react';
 
 interface Category {
 	id: string;
@@ -18,80 +21,162 @@ interface Category {
 export default function AdminCategoriesPage() {
 	const [categories, setCategories] = useState<Category[]>([]);
 	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState('');
+	const [modalOpen, setModalOpen] = useState(false);
+	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+	const [selectedCategory, setSelectedCategory] = useState<Category | null>(
+		null,
+	);
+	const [deleteLoading, setDeleteLoading] = useState(false);
+	const { showToast } = useToast();
 
-	useEffect(() => {
-		fetchCategories();
-	}, []);
-
-	async function fetchCategories() {
+	const fetchCategories = async () => {
 		try {
 			const res = await fetch('/api/categories');
 			if (!res.ok) throw new Error('Erro ao carregar');
 			const data = await res.json();
 			setCategories(data);
 		} catch (err: any) {
-			setError(err.message);
+			showToast(err.message, 'error');
 		} finally {
 			setLoading(false);
 		}
-	}
+	};
 
-	async function handleDelete(id: string) {
-		if (!confirm('Tem certeza que deseja excluir?')) return;
+	useEffect(() => {
+		fetchCategories();
+	}, []);
+
+	const handleEdit = (category: Category) => {
+		setSelectedCategory(category);
+		setModalOpen(true);
+	};
+
+	const handleDeleteClick = (category: Category) => {
+		setSelectedCategory(category);
+		setDeleteModalOpen(true);
+	};
+
+	const handleDeleteConfirm = async () => {
+		if (!selectedCategory) return;
+
+		setDeleteLoading(true);
 		try {
-			const res = await fetch(`/api/categories/${id}`, { method: 'DELETE' });
-			if (!res.ok) throw new Error('Erro ao excluir');
-			setCategories(categories.filter((c) => c.id !== id));
-		} catch (err: any) {
-			alert(err.message);
-		}
-	}
+			const res = await fetch(`/api/categories/${selectedCategory.id}`, {
+				method: 'DELETE',
+			});
 
-	if (loading) return <p>Carregando...</p>;
+			if (!res.ok) {
+				const data = await res.json();
+				throw new Error(data.error || 'Erro ao excluir');
+			}
+
+			showToast('Categoria excluída com sucesso!', 'success');
+			setCategories(categories.filter((c) => c.id !== selectedCategory.id));
+			setDeleteModalOpen(false);
+		} catch (err: any) {
+			showToast(err.message, 'error');
+		} finally {
+			setDeleteLoading(false);
+			setSelectedCategory(null);
+		}
+	};
+
+	const handleModalSuccess = () => {
+		showToast(
+			selectedCategory ? 'Categoria atualizada!' : 'Categoria criada!',
+			'success',
+		);
+		fetchCategories();
+	};
+
+	if (loading) {
+		return (
+			<div className='h-64 flex items-center justify-center'>
+				<LoadingSpinner size='lg' text='Carregando categorias...' />
+			</div>
+		);
+	}
 
 	return (
 		<div>
 			<div className='flex justify-between items-center mb-6'>
-				<h2 className='text-2xl font-bold'>Categorias</h2>
-				<Link href='/admin/categories/new'>
-					<Button>Nova Categoria</Button>
-				</Link>
+				<h2 className='text-2xl font-bold text-gray-800'>Categorias</h2>
+				<Button
+					onClick={() => {
+						setSelectedCategory(null);
+						setModalOpen(true);
+					}}
+				>
+					<Plus className='h-4 w-4 mr-2' />
+					Nova Categoria
+				</Button>
 			</div>
 
-			{error && <Alert variant='error'>{error}</Alert>}
-
-			<div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
-				{categories.map((category) => (
-					<Card key={category.id}>
-						<CardHeader>
-							<CardTitle>{category.name}</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<p className='text-sm text-gray-600 mb-2'>
-								{category.description || 'Sem descrição'}
-							</p>
-							<p className='text-xs text-gray-500'>
-								Produtos: {category._count?.products || 0}
-							</p>
-							<div className='mt-4 flex gap-2'>
-								<Link href={`/admin/categories/${category.id}/edit`}>
-									<Button variant='outline' size='sm'>
+			{categories.length === 0 ? (
+				<Card>
+					<CardContent className='py-12 text-center text-gray-500'>
+						Nenhuma categoria cadastrada.
+					</CardContent>
+				</Card>
+			) : (
+				<div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
+					{categories.map((category) => (
+						<Card
+							key={category.id}
+							className='hover:shadow-md transition-shadow'
+						>
+							<CardHeader className='pb-2'>
+								<CardTitle className='text-lg'>{category.name}</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<p className='text-sm text-gray-600 mb-3'>
+									{category.description || 'Sem descrição'}
+								</p>
+								<p className='text-xs text-gray-400 mb-4'>
+									{category._count?.products || 0} produto(s)
+								</p>
+								<div className='flex gap-2'>
+									<Button
+										variant='outline'
+										size='sm'
+										onClick={() => handleEdit(category)}
+										className='flex-1'
+									>
+										<Pencil className='h-3 w-3 mr-1' />
 										Editar
 									</Button>
-								</Link>
-								<Button
-									variant='destructive'
-									size='sm'
-									onClick={() => handleDelete(category.id)}
-								>
-									Excluir
-								</Button>
-							</div>
-						</CardContent>
-					</Card>
-				))}
-			</div>
+									<Button
+										variant='destructive'
+										size='sm'
+										onClick={() => handleDeleteClick(category)}
+										className='flex-1'
+									>
+										<Trash2 className='h-3 w-3 mr-1' />
+										Excluir
+									</Button>
+								</div>
+							</CardContent>
+						</Card>
+					))}
+				</div>
+			)}
+
+			{/* Modal de criação/edição */}
+			<CategoryModal
+				isOpen={modalOpen}
+				onClose={() => setModalOpen(false)}
+				onSuccess={handleModalSuccess}
+				category={selectedCategory}
+			/>
+
+			{/* Modal de confirmação de exclusão */}
+			<DeleteConfirmModal
+				isOpen={deleteModalOpen}
+				onClose={() => setDeleteModalOpen(false)}
+				onConfirm={handleDeleteConfirm}
+				itemName={selectedCategory?.name || ''}
+				loading={deleteLoading}
+			/>
 		</div>
 	);
 }
