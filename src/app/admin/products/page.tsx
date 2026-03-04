@@ -130,7 +130,7 @@ export default function AdminProductsPage() {
 				<div className='text-center py-12 bg-white rounded-lg border border-dashed'>
 					<p className='text-gray-500'>Nenhum produto cadastrado.</p>
 					<Button
-						variant='link'
+						variant='outline'
 						onClick={() => {
 							setSelectedProduct(null);
 							setModalOpen(true);
