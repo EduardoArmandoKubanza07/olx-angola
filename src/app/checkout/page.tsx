@@ -77,7 +77,7 @@ export default function CheckoutPage() {
 					<h2 className='text-2xl font-bold mb-4'>
 						Faça login para finalizar a compra
 					</h2>
-					<Button onClick={() => router.push('/auth/login')}>Entrar</Button>
+					<Button onClick={() => router.push('/login')}>Entrar</Button>
 				</div>
 			</>
 		);

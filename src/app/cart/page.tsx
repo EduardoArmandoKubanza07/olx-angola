@@ -23,7 +23,7 @@ export default function CartPage() {
 					<h2 className='text-2xl font-bold text-gray-900 mb-4'>
 						Faça login para ver seu carrinho
 					</h2>
-					<Link href='/auth/login'>
+					<Link href='/login'>
 						<Button>Entrar</Button>
 					</Link>
 				</div>

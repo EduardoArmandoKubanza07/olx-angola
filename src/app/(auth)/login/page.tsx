@@ -44,7 +44,9 @@ export default function LoginPage() {
 				<Card className='w-full max-w-md'>
 					<CardHeader className='space-y-1'>
 						<CardTitle className='text-3xl font-bold'>
-							Bem-vindo de volta
+							<Link href='/' className='text-3xl font-bold text-blue-600'>
+								OXL.<span className='text-gray-800'>Angola</span>
+							</Link>
 						</CardTitle>
 						<CardDescription>Entre na sua conta para continuar</CardDescription>
 					</CardHeader>

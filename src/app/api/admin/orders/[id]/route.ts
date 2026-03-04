@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 
-// PATCH /api/admin/orders/[id] - Atualizar status do pedido
 export async function PATCH(
 	request: Request,
 	{ params }: { params: Promise<{ id: string }> },

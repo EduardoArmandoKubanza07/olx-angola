@@ -123,7 +123,11 @@ export default function RegisterPage() {
 			<div className='flex items-center justify-center p-8'>
 				<Card className='w-full max-w-md'>
 					<CardHeader className='space-y-1'>
-						<CardTitle className='text-3xl font-bold'>Criar conta</CardTitle>
+						<CardTitle className='text-3xl font-bold'>
+							<Link href='/' className='text-3xl font-bold text-blue-600'>
+								OXL.<span className='text-gray-800'>Angola</span>
+							</Link>
+						</CardTitle>
 						<CardDescription>
 							Preencha os dados para se registrar
 						</CardDescription>

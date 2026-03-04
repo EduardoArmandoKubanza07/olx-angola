@@ -2,57 +2,39 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { formatPriceKz } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useToast } from '@/components/ui/toast';
+import { formatPriceKz } from '@/lib/utils';
 import { Eye, CheckCircle, XCircle } from 'lucide-react';
-
-interface OrderItem {
-	id: string;
-	quantity: number;
-	price: number;
-	product: { id: string; name: string; images: { url: string }[] };
-}
+import { AdminOrderDetailModal } from '@/components/admin/AdminOrderDetailModal';
 
 interface Order {
 	id: string;
-	status: string;
 	total: number;
+	status: string;
 	paymentProof: string | null;
 	createdAt: string;
 	user: { name: string; email: string };
-	address: {
-		street: string;
-		number: string;
-		neighborhood: string;
-		city: string;
-		state: string;
-		zipCode: string;
-	};
-	items: OrderItem[];
+	items: any[];
+	address: any;
 }
 
 export default function AdminOrdersPage() {
 	const [orders, setOrders] = useState<Order[]>([]);
 	const [loading, setLoading] = useState(true);
-	const [statusFilter, setStatusFilter] = useState('');
+	const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+	const [modalOpen, setModalOpen] = useState(false);
 	const { showToast } = useToast();
 
 	const fetchOrders = async () => {
-		setLoading(true);
 		try {
-			const url = statusFilter
-				? `/api/admin/orders?status=${statusFilter}`
-				: '/api/admin/orders';
-			const res = await fetch(url);
-			if (!res.ok) throw new Error('Erro ao carregar pedidos');
+			const res = await fetch('/api/admin/orders');
 			const data = await res.json();
 			setOrders(data);
-		} catch (error: any) {
-			showToast(error.message, 'error');
+		} catch (error) {
+			showToast('Erro ao carregar pedidos', 'error');
 		} finally {
 			setLoading(false);
 		}
@@ -60,7 +42,7 @@ export default function AdminOrdersPage() {
 
 	useEffect(() => {
 		fetchOrders();
-	}, [statusFilter]);
+	}, []);
 
 	const updateStatus = async (orderId: string, newStatus: string) => {
 		try {
@@ -69,11 +51,14 @@ export default function AdminOrdersPage() {
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ status: newStatus }),
 			});
-			if (!res.ok) throw new Error('Erro ao atualizar status');
+			if (!res.ok) throw new Error('Erro ao atualizar');
 			showToast('Status atualizado!', 'success');
 			fetchOrders();
-		} catch (error: any) {
-			showToast(error.message, 'error');
+			if (selectedOrder) {
+				setSelectedOrder({ ...selectedOrder, status: newStatus });
+			}
+		} catch (error) {
+			showToast('Erro ao atualizar status', 'error');
 		}
 	};
 
@@ -89,10 +74,6 @@ export default function AdminOrdersPage() {
 		return styles[status as keyof typeof styles] || 'bg-gray-100 text-gray-800';
 	};
 
-	const formatDate = (date: string) => {
-		return new Date(date).toLocaleDateString('pt-AO');
-	};
-
 	if (loading) {
 		return (
 			<div className='h-64 flex items-center justify-center'>
@@ -103,123 +84,88 @@ export default function AdminOrdersPage() {
 
 	return (
 		<div>
-			<div className='flex justify-between items-center mb-6'>
-				<h2 className='text-2xl font-bold text-gray-800'>Pedidos</h2>
-				<select
-					value={statusFilter}
-					onChange={(e) => setStatusFilter(e.target.value)}
-					className='border rounded-md px-3 py-2'
-				>
-					<option value=''>Todos os status</option>
-					<option value='PENDING'>Pendentes</option>
-					<option value='PAID'>Pagos</option>
-					<option value='PROCESSING'>Processando</option>
-					<option value='SHIPPED'>Enviados</option>
-					<option value='DELIVERED'>Entregues</option>
-					<option value='CANCELLED'>Cancelados</option>
-				</select>
-			</div>
+			<h2 className='text-2xl font-bold text-gray-800 mb-6'>Pedidos</h2>
 
-			{orders.length === 0 ? (
-				<Card>
-					<CardContent className='py-12 text-center text-gray-500'>
-						Nenhum pedido encontrado.
-					</CardContent>
-				</Card>
-			) : (
-				<div className='space-y-4'>
-					{orders.map((order) => (
-						<Card key={order.id} className='hover:shadow-md transition-shadow'>
-							<CardContent className='p-6'>
-								<div className='flex flex-wrap justify-between items-start gap-4'>
-									<div>
-										<div className='flex items-center gap-2 mb-2'>
-											<span className='text-sm text-gray-500'>
-												Pedido #{order.id.slice(-8)}
-											</span>
-											<span
-												className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(order.status)}`}
-											>
-												{order.status}
-											</span>
+			<div className='bg-white rounded-lg border overflow-hidden'>
+				<div className='overflow-x-auto'>
+					<table className='w-full text-sm'>
+						<thead className='bg-gray-50 border-b'>
+							<tr>
+								<th className='px-4 py-3 text-left'>Pedido</th>
+								<th className='px-4 py-3 text-left'>Cliente</th>
+								<th className='px-4 py-3 text-left'>Data</th>
+								<th className='px-4 py-3 text-left'>Total</th>
+								<th className='px-4 py-3 text-left'>Status</th>
+								<th className='px-4 py-3 text-left'>Comprovante</th>
+								<th className='px-4 py-3 text-left'>Ações</th>
+							</tr>
+						</thead>
+						<tbody className='divide-y'>
+							{orders.map((order) => (
+								<tr key={order.id} className='hover:bg-gray-50'>
+									<td className='px-4 py-3 font-mono text-xs'>
+										#{order.id.slice(-8)}
+									</td>
+									<td className='px-4 py-3'>
+										<div>{order.user.name}</div>
+										<div className='text-xs text-gray-500'>
+											{order.user.email}
 										</div>
-										<p className='font-medium'>{order.user.name}</p>
-										<p className='text-sm text-gray-600'>{order.user.email}</p>
-										<p className='text-sm text-gray-600 mt-2'>
-											{order.address.street}, {order.address.number} -{' '}
-											{order.address.neighborhood}, {order.address.city}/
-											{order.address.state}
-										</p>
-										<p className='text-sm text-gray-500 mt-1'>
-											Data: {formatDate(order.createdAt)}
-										</p>
-									</div>
-									<div className='text-right'>
-										<p className='text-xl font-bold text-blue-600'>
-											{formatPriceKz(order.total)}
-										</p>
-										{order.paymentProof && (
+									</td>
+									<td className='px-4 py-3'>
+										{new Date(order.createdAt).toLocaleDateString('pt-AO')}
+									</td>
+									<td className='px-4 py-3 font-bold'>
+										{formatPriceKz(order.total)}
+									</td>
+									<td className='px-4 py-3'>
+										<span
+											className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(order.status)}`}
+										>
+											{order.status}
+										</span>
+									</td>
+									<td className='px-4 py-3'>
+										{order.paymentProof ? (
 											<a
 												href={order.paymentProof}
 												target='_blank'
 												rel='noopener noreferrer'
-												className='text-sm text-blue-500 hover:underline inline-block mt-1'
+												className='text-blue-600 hover:underline text-xs'
 											>
-												Ver comprovante
+												Ver
 											</a>
+										) : (
+											<span className='text-gray-400'>Não enviado</span>
 										)}
-										<div className='mt-3 flex gap-2'>
-											{order.status === 'PENDING' && (
-												<>
-													<Button
-														size='sm'
-														onClick={() => updateStatus(order.id, 'PAID')}
-														className='bg-green-600 hover:bg-green-700'
-													>
-														<CheckCircle className='h-4 w-4 mr-1' />
-														Confirmar pagamento
-													</Button>
-													<Button
-														size='sm'
-														variant='destructive'
-														onClick={() => updateStatus(order.id, 'CANCELLED')}
-													>
-														<XCircle className='h-4 w-4 mr-1' />
-														Cancelar
-													</Button>
-												</>
-											)}
-											{order.status === 'PAID' && (
-												<Button
-													size='sm'
-													onClick={() => updateStatus(order.id, 'PROCESSING')}
-												>
-													Processar
-												</Button>
-											)}
-											{order.status === 'PROCESSING' && (
-												<Button
-													size='sm'
-													onClick={() => updateStatus(order.id, 'SHIPPED')}
-												>
-													Marcar como enviado
-												</Button>
-											)}
-											{order.status === 'SHIPPED' && (
-												<Button
-													size='sm'
-													onClick={() => updateStatus(order.id, 'DELIVERED')}
-												>
-													Confirmar entrega
-												</Button>
-											)}
-										</div>
-									</div>
-								</div>
-							</CardContent>
-						</Card>
-					))}
+									</td>
+									<td className='px-4 py-3'>
+										<Button
+											variant='ghost'
+											size='sm'
+											onClick={() => {
+												setSelectedOrder(order);
+												setModalOpen(true);
+											}}
+										>
+											<Eye className='h-4 w-4' />
+										</Button>
+									</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
 				</div>
+			</div>
+
+			{/* Modal de detalhes do pedido (admin) */}
+			{selectedOrder && (
+				<AdminOrderDetailModal
+					order={selectedOrder}
+					isOpen={modalOpen}
+					onClose={() => setModalOpen(false)}
+					onUpdateStatus={updateStatus}
+				/>
 			)}
 		</div>
 	);

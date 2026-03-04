@@ -12,7 +12,7 @@ export async function POST(request: Request) {
 
 		const { addressId, paymentMethod, paymentProof } = await request.json();
 
-		// 1. Buscar carrinho do usuário
+		// Buscar carrinho com produtos
 		const cart = await prisma.cart.findUnique({
 			where: { userId: user.id },
 			include: {
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
 			return NextResponse.json({ error: 'Carrinho vazio' }, { status: 400 });
 		}
 
-		// 2. Verificar se o endereço pertence ao usuário
+		// Verificar endereço pertence ao usuário
 		const address = await prisma.address.findFirst({
 			where: { id: addressId, userId: user.id },
 		});
@@ -34,40 +34,66 @@ export async function POST(request: Request) {
 			return NextResponse.json({ error: 'Endereço inválido' }, { status: 400 });
 		}
 
-		// 3. Calcular total
+		// Verificar estoque suficiente
+		for (const item of cart.items) {
+			if (item.product.stock < item.quantity) {
+				return NextResponse.json(
+					{ error: `Produto ${item.product.name} sem estoque suficiente` },
+					{ status: 400 },
+				);
+			}
+		}
+
+		// Calcular total
 		const total = cart.items.reduce(
 			(acc, item) => acc + item.product.price * item.quantity,
 			0,
 		);
 
-		// 4. Criar o pedido (sem transação explícita)
-		const order = await prisma.order.create({
-			data: {
-				userId: user.id,
-				addressId,
-				total,
-				paymentMethod,
-				paymentProof,
-				status: 'PENDING',
-				items: {
-					create: cart.items.map((item) => ({
-						productId: item.productId,
-						quantity: item.quantity,
-						price: item.product.price,
-					})),
+		// Usar transação para garantir atomicidade
+		const order = await prisma.$transaction(async (tx) => {
+			// 1. Criar o pedido
+			const newOrder = await tx.order.create({
+				data: {
+					userId: user.id,
+					addressId,
+					total,
+					paymentMethod,
+					paymentProof,
+					status: 'PENDING',
+					items: {
+						create: cart.items.map((item) => ({
+							productId: item.productId,
+							quantity: item.quantity,
+							price: item.product.price,
+						})),
+					},
 				},
-			},
-			include: { items: true },
-		});
+			});
 
-		// 5. Limpar o carrinho
-		await prisma.cartItem.deleteMany({
-			where: { cartId: cart.id },
+			// 2. Atualizar estoque de cada produto
+			for (const item of cart.items) {
+				await tx.product.update({
+					where: { id: item.productId },
+					data: {
+						stock: {
+							decrement: item.quantity,
+						},
+					},
+				});
+			}
+
+			// 3. Limpar carrinho
+			await tx.cartItem.deleteMany({
+				where: { cartId: cart.id },
+			});
+
+			return newOrder;
 		});
 
 		return NextResponse.json(order, { status: 201 });
 	} catch (error: any) {
-		console.error('Erro detalhado ao criar pedido:', error);
+		console.error('Erro ao criar pedido:', error);
 		return NextResponse.json(
 			{ error: error.message || 'Erro interno ao processar pedido' },
 			{ status: 500 },
