@@ -186,6 +186,7 @@ export function ProductModal({
 							<Label htmlFor='description'>Descrição *</Label>
 							<Input
 								id='description'
+								minLength={10}
 								value={description}
 								onChange={(e) => setDescription(e.target.value)}
 								required

@@ -50,21 +50,6 @@ export function Footer() {
 									Categorias
 								</Link>
 							</li>
-							<li>
-								<Link href='/about' className='hover:text-white transition'>
-									Sobre Nós
-								</Link>
-							</li>
-							<li>
-								<Link href='/contact' className='hover:text-white transition'>
-									Contacto
-								</Link>
-							</li>
-							<li>
-								<Link href='/faq' className='hover:text-white transition'>
-									FAQ
-								</Link>
-							</li>
 						</ul>
 					</div>
 
