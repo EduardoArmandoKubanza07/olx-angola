@@ -1,18 +1,16 @@
-// src/app/api/upload/route.ts
 import { NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { getCurrentUser } from '@/lib/auth';
 
-// Força o uso do runtime Node.js (necessário para manipulação de arquivos)
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
 	try {
-		// Verificar autenticação (apenas admin pode fazer upload)
+		// Verificar autenticação (qualquer usuário logado pode fazer upload)
 		const user = await getCurrentUser();
-		if (!user || user.role !== 'ADMIN') {
-			return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+		if (!user) {
+			return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
 		}
 
 		const formData = await request.formData();
@@ -25,10 +23,20 @@ export async function POST(request: Request) {
 			);
 		}
 
-		// Validar tipo de arquivo (apenas imagens)
-		if (!file.type.startsWith('image/')) {
+		// Validar tipo de arquivo (imagens ou PDF)
+		const allowedTypes = [
+			'image/jpeg',
+			'image/png',
+			'image/gif',
+			'image/webp',
+			'application/pdf',
+		];
+		if (!allowedTypes.includes(file.type)) {
 			return NextResponse.json(
-				{ error: 'Apenas imagens são permitidas' },
+				{
+					error:
+						'Tipo de arquivo não permitido. Apenas imagens e PDF são aceitos.',
+				},
 				{ status: 400 },
 			);
 		}
@@ -36,16 +44,18 @@ export async function POST(request: Request) {
 		// Validar tamanho (máx 5MB)
 		if (file.size > 5 * 1024 * 1024) {
 			return NextResponse.json(
-				{ error: 'Imagem muito grande (máx 5MB)' },
+				{ error: 'Arquivo muito grande (máx 5MB)' },
 				{ status: 400 },
 			);
 		}
 
 		// Gerar nome único para o arquivo
 		const timestamp = Date.now();
-		const originalName = file.name.replace(/[^a-zA-Z0-9.]/g, '_'); // Remove caracteres especiais
-		const fileName = `${timestamp}-${originalName}`;
-		const uploadDir = path.join(process.cwd(), 'public/uploads');
+		const originalName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+		const fileName = `${user.id}-${timestamp}-${originalName}`;
+
+		// Diretório específico para comprovantes
+		const uploadDir = path.join(process.cwd(), 'public/uploads/proofs');
 		const filePath = path.join(uploadDir, fileName);
 
 		// Garantir que a pasta existe
@@ -57,7 +67,7 @@ export async function POST(request: Request) {
 		await writeFile(filePath, buffer);
 
 		// Retornar o caminho público
-		const publicUrl = `/uploads/${fileName}`;
+		const publicUrl = `/uploads/proofs/${fileName}`;
 		return NextResponse.json({ url: publicUrl });
 	} catch (error) {
 		console.error('Erro no upload:', error);

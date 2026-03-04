@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-	title: 'E-commerce Diversos',
+	title: 'OXL.Angola - A melhor loja de diversos da banda.',
 	description: 'Sistema de e-commerce completo',
 };
 

@@ -28,7 +28,12 @@ export const categorySchema = z.object({
 	description: z.string().optional(),
 });
 
-// Validação de endereço
+// Validação de item do carrinho
+export const cartItemSchema = z.object({
+	productId: z.string(),
+	quantity: z.number().int().min(1, 'Quantidade mínima é 1'),
+});
+
 export const addressSchema = z.object({
 	street: z.string().min(3, 'Rua é obrigatória'),
 	number: z.string().min(1, 'Número é obrigatório'),
@@ -36,14 +41,8 @@ export const addressSchema = z.object({
 	neighborhood: z.string().min(3, 'Bairro é obrigatório'),
 	city: z.string().min(3, 'Cidade é obrigatória'),
 	state: z.string().length(2, 'UF deve ter 2 caracteres'),
-	zipCode: z.string().regex(/^\d{5}-?\d{3}$/, 'CEP inválido'),
+	zipCode: z.string().min(4, 'CEP deve ter pelo menos 4 caracteres'),
 	isDefault: z.boolean().default(false),
-});
-
-// Validação de item do carrinho
-export const cartItemSchema = z.object({
-	productId: z.string(),
-	quantity: z.number().int().min(1, 'Quantidade mínima é 1'),
 });
 
 // Tipos inferidos

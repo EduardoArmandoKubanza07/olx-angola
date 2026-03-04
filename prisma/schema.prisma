@@ -103,11 +103,12 @@ model Order {
   userId        String
   user          User        @relation(fields: [userId], references: [id])
   items         OrderItem[]
-  status        String      @default("PENDING")
+  status        String      @default("PENDING") // PENDING, PAID, PROCESSING, SHIPPED, DELIVERED, CANCELLED
   total         Float
   addressId     String
   address       Address     @relation(fields: [addressId], references: [id])
-  paymentMethod String
+  paymentMethod String // "transfer", "cash", etc.
+  paymentProof  String? // URL do comprovante (opcional)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 }
