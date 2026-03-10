@@ -12,7 +12,6 @@ export function Header() {
 	const { totalItems } = useCart();
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-	console.log(user);
 	const navs = [
 		{
 			link: '/products',
